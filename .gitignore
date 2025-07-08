@@ -10,5 +10,8 @@ Saved
 *.sdf
 *.sln
 *.suo
+*.user
+*.userprefs
 *.xcodeproj
 *.xcworkspace
+*.xcconfig
