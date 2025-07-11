@@ -8,6 +8,8 @@
 #include "MainCharacter.generated.h"
 
 
+class UCameraComponent;
+class USpringArmComponent;
 class ASpecialAttackProjectile;
 class ABasicAttackProjectile;
 class AMainGameState;
@@ -46,6 +48,19 @@ class DIMMINGLIGHT_API AMainCharacter : public ACharacter, public IDamageable {
 		FOnHealthChange HealthChangeDelegate;
 		UPROPERTY(BlueprintAssignable, Category = "Delegates")
 		FOnInteractFocusChange InteractFocusChangeDelegate;
+
+		// CAMERA
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		TObjectPtr<USpringArmComponent> SpringArm;
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		TObjectPtr<UCameraComponent> Camera;
+		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fade")
+		UMaterialInterface* FadeBaseMaterial;
+
+		UPROPERTY()
+		TSet<AActor*> CurrentlyHitActors;
+		TMap<AActor*, TArray<UMaterialInterface*>> OriginalActors;
+		TMap<AActor*, TArray<UMaterialInstanceDynamic*>> FadedActors;
 
 		// AUDIO
 		UPROPERTY(Transient, SkipSerialization)

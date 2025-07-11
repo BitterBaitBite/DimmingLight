@@ -1,6 +1,7 @@
 #include "BasicAttackProjectile.h"
 
 #include "EnemyCharacterBase.h"
+#include "EnemyKrakenCharacter.h"
 #include "NPCBase.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -96,6 +97,11 @@ void ABasicAttackProjectile::OnProjectileHit(
 
 		Destroy();
 		return;
+	}
+
+	AEnemyKrakenCharacter* KrakenCharacter = Cast<AEnemyKrakenCharacter>(OtherActor);
+	if (KrakenCharacter) {
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "KrakenCharacter Hit");
 	}
 
 	ANPCBase* NPC = Cast<ANPCBase>(OtherActor);

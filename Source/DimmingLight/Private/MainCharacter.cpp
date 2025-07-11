@@ -12,15 +12,26 @@
 #include "MainPlayerController.h"
 #include "SpecialAttackProjectile.h"
 #include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "Components/AudioComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/SpotLightComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Logging/StructuredLog.h"
 
 
 AMainCharacter::AMainCharacter() {
 	PrimaryActorTick.bCanEverTick = true;
+
+	// Camera Component
+	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm"));
+	SpringArm->SetupAttachment(RootComponent);
+	SpringArm->SetRelativeRotation(FRotator(0.f, 0.f, -45.f));
+	SpringArm->SocketOffset = FVector(0.f, 0.f, 100.f);
+
+	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	Camera->SetupAttachment(SpringArm);
 
 	// Audio Component for Voice Lines
 	VoiceAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("VoiceAudioComponent"));
@@ -152,6 +163,102 @@ void AMainCharacter::Tick(float DeltaTime) {
 		LightSourceMesh->SetWorldRotation(FRotator(0, RotatingSpeed * MovementTime, 0));
 		LightSourceMesh->SetRelativeLocation(NewLocation);
 	}
+
+	// Custom Camera Clipping
+	FVector CameraLocation = Camera->GetComponentLocation();
+	FVector TargetLocation = SpringArm->GetComponentLocation();
+
+	TArray<FHitResult> Hits;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	TSet<AActor*> NewHitActors;
+	// GetWorld()->LineTraceMultiByChannel(Hits, CameraLocation, TargetLocation, ECC_Visibility, Params);
+	UKismetSystemLibrary::SphereTraceMulti(
+		GetWorld(),
+		CameraLocation,
+		TargetLocation,
+		100.f,
+		TraceTypeQuery1,
+		false, {this}, EDrawDebugTrace::None, Hits, true
+	);
+
+	// Check every hit actor
+	for (FHitResult& Hit : Hits) {
+		AActor* HitActor = Hit.GetActor();
+		if (!HitActor || HitActor == this) continue;
+
+		NewHitActors.Add(HitActor);
+
+		// If not already faded
+		if (!FadedActors.Contains(HitActor)) {
+			// Create a dynamic material instance to edit in real-time
+			TArray<UMaterialInterface*> BaseMaterials;
+			TArray<UMaterialInstanceDynamic*> DynamicMaterials;
+
+			TArray<UPrimitiveComponent*> Components;
+			HitActor->GetComponents(Components);
+
+			// For every material in components, create a dynamic material and store it in the array
+			for (UPrimitiveComponent* Comp : Components) {
+				int32 MatCount = Comp->GetNumMaterials();
+				for (int32 i = 0; i < MatCount; ++i) {
+					UMaterialInterface* BaseMat = Comp->GetMaterial(i);
+					if (!BaseMat) continue;
+
+					// UMaterialInstanceDynamic* DynamicMat = UMaterialInstanceDynamic::Create(BaseMat, this);
+					UMaterialInstanceDynamic* DynamicMat = UMaterialInstanceDynamic::Create(FadeBaseMaterial, this);
+					Comp->SetMaterial(i, DynamicMat);
+					DynamicMat->SetScalarParameterValue("Fade", 1.0f);
+					// DynamicMat->SetVectorParameterValue("Color", BaseMat);
+					BaseMaterials.Add(BaseMat);
+					DynamicMaterials.Add(DynamicMat);
+				}
+			}
+
+			// Store the fading actor
+			FadedActors.Add(HitActor, DynamicMaterials);
+			OriginalActors.Add(HitActor, BaseMaterials);
+		}
+	}
+
+	// Fade every hit actor contained in fading actors map
+	for (AActor* Actor : NewHitActors) {
+		if (FadedActors.Contains(Actor)) {
+			for (UMaterialInstanceDynamic* DynamicMat : FadedActors[Actor]) {
+				float CurrentFade = DynamicMat->K2_GetScalarParameterValue("Fade");
+				float NewFade = FMath::FInterpTo(CurrentFade, 0.3f, DeltaTime, 5.0f);
+				DynamicMat->SetScalarParameterValue(TEXT("Fade"), NewFade);
+			}
+		}
+	}
+
+	// Restore the ones that are no longer hit
+	for (auto It = FadedActors.CreateIterator(); It; ++It) {
+		AActor* Actor = It.Key();
+		if (!NewHitActors.Contains(Actor)) {
+			for (UMaterialInstanceDynamic* Mat : It.Value()) {
+				float CurrentFade = Mat->K2_GetScalarParameterValue(FName("Fade"));
+				float NewFade = FMath::FInterpTo(CurrentFade, 1.0f, DeltaTime, 5.0f);
+				Mat->SetScalarParameterValue("Fade", NewFade);
+			}
+
+			// Remove when completely visible
+			if (It.Value()[0]->K2_GetScalarParameterValue("Fade") >= 0.99f) {
+				TArray<UPrimitiveComponent*> Components;
+				Actor->GetComponents(Components);
+
+				for (UPrimitiveComponent* Comp : Components) {
+					int32 MatCount = Comp->GetNumMaterials();
+					for (int32 i = 0; i < MatCount; ++i) {
+						Comp->SetMaterial(i, OriginalActors[Actor][i]);
+					}
+				}
+				OriginalActors.Remove(Actor);
+				It.RemoveCurrent();
+			}
+		}
+	}
 }
 
 // SETUP INPUT
@@ -259,17 +366,17 @@ void AMainCharacter::ReceiveDamage_Implementation(float RawDamage, EDamageType D
 	// Calculate the actual damage
 	float ReducedDamage = RawDamage;
 	switch (DamageType) {
-		case EDamageType::Physical:
-			ReducedDamage *= (1.f - PhysicalResistanceInitial);
-			break;
+	case EDamageType::Physical:
+		ReducedDamage *= (1.f - PhysicalResistanceInitial);
+		break;
 
-		case EDamageType::Magic:
-			ReducedDamage *= (1.f - MagicResistanceInitial);
-			break;
+	case EDamageType::Magic:
+		ReducedDamage *= (1.f - MagicResistanceInitial);
+		break;
 
-		default:
-			ReducedDamage *= 1;
-			break;
+	default:
+		ReducedDamage *= 1;
+		break;
 	}
 	int32 Damage = FMath::RoundToInt(ReducedDamage);
 	GEngine->AddOnScreenDebugMessage(

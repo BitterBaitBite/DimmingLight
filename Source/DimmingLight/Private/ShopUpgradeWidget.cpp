@@ -38,4 +38,7 @@ void UShopUpgradeWidget::OnBuyUpgrade() {
 
 	UpgradeButton->SetVisibility(ESlateVisibility::Collapsed);
 	UpgradeCostText->SetText(FText::FromString(TEXT("0")));
+
+	// TODO
+	// PlaySound()
 }

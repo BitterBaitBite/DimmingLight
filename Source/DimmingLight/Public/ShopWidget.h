@@ -5,6 +5,7 @@
 #include "ShopWidget.generated.h"
 
 
+class UScrollBox;
 class UShopUpgradeWidget;
 class UTextBlock;
 struct FUpgradeData;
@@ -18,47 +19,54 @@ UCLASS()
 class DIMMINGLIGHT_API UShopWidget : public UUserWidget {
 	GENERATED_BODY()
 
-	public:
-		virtual void NativeConstruct() override;
+public:
+	UFUNCTION()
+	virtual void NativeConstruct() override;
 
-		// LISTS
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget="Upgrade Stacks"))
-		TObjectPtr<UStackBox> StatUpgradesBox = nullptr;
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget="Upgrade Stacks"))
-		TObjectPtr<UStackBox> CombatUpgradesBox = nullptr;
+	// LISTS
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget="Upgrade Stacks"))
+	TObjectPtr<UScrollBox> StatUpgradesBox = nullptr;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget="Upgrade Stacks"))
+	TObjectPtr<UScrollBox> CombatUpgradesBox = nullptr;
 
-		// DESCRIPTION
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget="DescriptionText"))
-		TObjectPtr<UTextBlock> DescriptionText = nullptr;
+	// DESCRIPTION
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget="DescriptionText"))
+	TObjectPtr<UTextBlock> DescriptionText = nullptr;
 
-		// UPGRADE WIDGETS
-		// UPGRADE WIDGETS
-		UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Upgrades")
-		TSubclassOf<UUserWidget> UpgradeWidgetTemplate = nullptr;
+	// DESCRIPTION
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget="CurrencyText"))
+	TObjectPtr<UTextBlock> CurrencyText = nullptr;
 
-		UPROPERTY(Transient, SkipSerialization)
-		TObjectPtr<UShopUpgradeWidget> HealthUpgradeWidget = nullptr;
-		UPROPERTY(Transient, SkipSerialization)
-		TObjectPtr<UShopUpgradeWidget> DamageUpgradeWidget = nullptr;
-		UPROPERTY(Transient, SkipSerialization)
-		TObjectPtr<UShopUpgradeWidget> PhysicResistanceUpgradeWidget = nullptr;
-		UPROPERTY(Transient, SkipSerialization)
-		TObjectPtr<UShopUpgradeWidget> MagicResistanceUpgradeWidget = nullptr;
-		UPROPERTY(Transient, SkipSerialization)
-		TObjectPtr<UShopUpgradeWidget> LuminosityUpgradeWidget = nullptr;
-		UPROPERTY(Transient, SkipSerialization)
-		TObjectPtr<UShopUpgradeWidget> MainAttackUpgradeWidget = nullptr;
-		UPROPERTY(Transient, SkipSerialization)
-		TObjectPtr<UShopUpgradeWidget> SpecialAttackUpgradeWidget = nullptr;
-		UPROPERTY(Transient, SkipSerialization)
-		TObjectPtr<UShopUpgradeWidget> DodgeUpgradeWidget = nullptr;
+	// UPGRADE WIDGETS
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Upgrades")
+	TSubclassOf<UUserWidget> UpgradeWidgetTemplate = nullptr;
 
-	private:
-		UPROPERTY(Transient, SkipSerialization)
-		TObjectPtr<UMainGameInstance> GameInstance = nullptr;
-		UPROPERTY(Transient, SkipSerialization)
-		TArray<TObjectPtr<ANPCShop>> ShopNPCs = {};
+	UPROPERTY(Transient, SkipSerialization)
+	TObjectPtr<UShopUpgradeWidget> HealthUpgradeWidget = nullptr;
+	UPROPERTY(Transient, SkipSerialization)
+	TObjectPtr<UShopUpgradeWidget> DamageUpgradeWidget = nullptr;
+	UPROPERTY(Transient, SkipSerialization)
+	TObjectPtr<UShopUpgradeWidget> PhysicResistanceUpgradeWidget = nullptr;
+	UPROPERTY(Transient, SkipSerialization)
+	TObjectPtr<UShopUpgradeWidget> MagicResistanceUpgradeWidget = nullptr;
+	UPROPERTY(Transient, SkipSerialization)
+	TObjectPtr<UShopUpgradeWidget> LuminosityUpgradeWidget = nullptr;
+	UPROPERTY(Transient, SkipSerialization)
+	TObjectPtr<UShopUpgradeWidget> MainAttackUpgradeWidget = nullptr;
+	UPROPERTY(Transient, SkipSerialization)
+	TObjectPtr<UShopUpgradeWidget> SpecialAttackUpgradeWidget = nullptr;
+	UPROPERTY(Transient, SkipSerialization)
+	TObjectPtr<UShopUpgradeWidget> DodgeUpgradeWidget = nullptr;
 
-		UFUNCTION()
-		void OnUpgradeAvailabilityChange(FUpgradeData AvailableUpgrades);
+private:
+	UPROPERTY(Transient, SkipSerialization)
+	TObjectPtr<UMainGameInstance> GameInstance = nullptr;
+	UPROPERTY(Transient, SkipSerialization)
+	TArray<TObjectPtr<ANPCShop>> ShopNPCs = {};
+
+	UFUNCTION()
+	void OnUpgradeAvailabilityChange(FUpgradeData AvailableUpgrades);
+
+	UFUNCTION()
+	void OnCurrencyChange(int32 NewCurrencyValue);
 };
