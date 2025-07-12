@@ -38,5 +38,8 @@ void ANPCShop::Interact_Implementation(AActor* InteractionActor) {
 }
 
 void ANPCShop::OnUnfocused_Implementation() {
+	Super::OnUnfocused_Implementation();
+	// ANPCInteractable::OnUnfocused_Implementation();
+
 	HUD->CloseShop();
 }

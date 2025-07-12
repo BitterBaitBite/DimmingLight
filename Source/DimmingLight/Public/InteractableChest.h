@@ -6,8 +6,19 @@
 #include "InteractableChest.generated.h"
 
 
+class UMainGameInstance;
+enum class ECombatUpgradeType : uint8;
 class URectLightComponent;
 class UBoxComponent;
+
+UENUM(BlueprintType)
+enum class EChestRewardsType : uint8 {
+	None = 0,
+	UpgradeOnly = 1,
+	CurrencyOnly = 2,
+	UpgradeOrCurrency = 3,
+	UpgradeAndCurrency = 4,
+};
 
 UCLASS()
 class DIMMINGLIGHT_API AInteractableChest : public AActor, public IInteractable {
@@ -50,6 +61,24 @@ class DIMMINGLIGHT_API AInteractableChest : public AActor, public IInteractable 
 		UFUNCTION()
 		virtual void OnUnfocused_Implementation() override;
 
+		// CHEST REWARDS
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Chest rewards")
+		EChestRewardsType ChestRewardsAvailability = EChestRewardsType::None;
+
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Chest rewards")
+		TArray<ECombatUpgradeType> AvailableUpgrades;
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Chest rewards")
+		float MinCurrencyReward = 0.f;
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Chest rewards")
+		float MaxCurrencyReward = 0.f;
+
+		// GAME INSTANCE
+		UPROPERTY(Transient, SkipSerialization)
+		TObjectPtr<UMainGameInstance> GameInstance = nullptr;
+
 	protected:
 		bool bIsOpen = false;
+
+		UFUNCTION()
+		void OpenChest();
 };

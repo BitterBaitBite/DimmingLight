@@ -1,8 +1,11 @@
 ﻿#include "InteractableChest.h"
 
+#include "ECombatUpgradeType.h"
+#include "MainGameInstance.h"
 #include "Components/BoxComponent.h"
 #include "Components/LightComponent.h"
 #include "Components/RectLightComponent.h"
+#include "Logging/StructuredLog.h"
 
 
 AInteractableChest::AInteractableChest() {
@@ -29,6 +32,8 @@ void AInteractableChest::BeginPlay() {
 	Super::BeginPlay();
 
 	ChestLight->Intensity = 0.f;
+
+	GameInstance = Cast<UMainGameInstance>(GetGameInstance());
 }
 
 void AInteractableChest::Tick(float DeltaTime) {
@@ -37,16 +42,20 @@ void AInteractableChest::Tick(float DeltaTime) {
 	if (!bIsOpen) return;
 
 	if (ChestLight->Intensity < OpenLightIntensity) {
-		ChestLight->Intensity += IntensityChangeSpeed * DeltaTime;
+		ChestLight->Intensity = FMath::InterpEaseIn(0.f, OpenLightIntensity, (ChestLight->Intensity / OpenLightIntensity + DeltaTime),
+		                                            IntensityChangeSpeed);
+		// ChestLight->Intensity += IntensityChangeSpeed * DeltaTime;
 	}
-	else {
-		ChestLight->Intensity = OpenLightIntensity;
-	}
+	// else {
+	// 	ChestLight->Intensity = OpenLightIntensity;
+	// }
 
 	FRotator CurrentLidRotation = LidPivot->GetRelativeRotation();
 	if (CurrentLidRotation.Pitch < OpenLidRotation.Pitch) {
 		float PitchDelta = OpenLidSpeed * DeltaTime;
 		FRotator NewLidRotation = CurrentLidRotation + FRotator(PitchDelta, 0.f, 0.f);
+		NewLidRotation.Pitch = FMath::InterpEaseIn(0., OpenLidRotation.Pitch,
+		                                           (CurrentLidRotation.Pitch / OpenLidRotation.Pitch + DeltaTime), OpenLidSpeed);
 
 		LidPivot->SetRelativeRotation(NewLidRotation);
 	}
@@ -58,28 +67,69 @@ void AInteractableChest::Tick(float DeltaTime) {
 void AInteractableChest::Interact_Implementation(AActor* InteractionActor) {
 	IInteractable::Interact_Implementation(InteractionActor);
 
-	GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Red, "Interacting with chest");
-	if (bIsOpen) {
-		return;
+	if (!bIsOpen) {
+		OpenChest();
 	}
-
-	bIsOpen = true;
 }
 
 FText AInteractableChest::GetInteraction_Implementation() {
 	if (bIsOpen) {
-		return FText::FromString(TEXT("Chest is open"));
+		return FText::FromString(TEXT("Already open"));
 	}
 
 	return FText::FromString(TEXT("Open chest"));
 }
 
 void AInteractableChest::OnFocused_Implementation() {
-	IInteractable::OnFocused_Implementation();
-	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Red, "Focus on chest");
+	BaseMesh->SetRenderCustomDepth(true);
+	LidMesh->SetRenderCustomDepth(true);
 }
 
 void AInteractableChest::OnUnfocused_Implementation() {
-	IInteractable::OnUnfocused_Implementation();
-	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Red, "Chest lost focus");
+	BaseMesh->SetRenderCustomDepth(false);
+	LidMesh->SetRenderCustomDepth(false);
+}
+
+void AInteractableChest::OpenChest() {
+	bIsOpen = true;
+
+	EChestRewardsType RewardType = ChestRewardsAvailability;
+	if (RewardType == EChestRewardsType::UpgradeOrCurrency) {
+		RewardType = FMath::RandBool() ? EChestRewardsType::CurrencyOnly : EChestRewardsType::UpgradeOnly;
+	}
+	switch (RewardType) {
+		case EChestRewardsType::CurrencyOnly: {
+			float CurrencyReward = FMath::RandRange(MinCurrencyReward, MaxCurrencyReward);
+			GameInstance->AddCurrency(CurrencyReward);
+			break;
+		}
+
+		case EChestRewardsType::UpgradeOnly: {
+			FUpgradeData CurrentUpgrades = GameInstance->GetUpgradeData();
+			for (ECombatUpgradeType Upgrade : AvailableUpgrades) {
+				if (!CurrentUpgrades.CombatUpgrades.Contains(Upgrade)) {
+					CurrentUpgrades.CombatUpgrades.Add(Upgrade);
+				}
+			}
+			GameInstance->SetUpgradeData(CurrentUpgrades);
+			break;
+		}
+
+		case EChestRewardsType::UpgradeAndCurrency: {
+			float CurrencyReward = FMath::RandRange(MinCurrencyReward, MaxCurrencyReward);
+			GameInstance->AddCurrency(CurrencyReward);
+
+			FUpgradeData CurrentUpgrades = GameInstance->GetUpgradeData();
+			for (ECombatUpgradeType Upgrade : AvailableUpgrades) {
+				if (!CurrentUpgrades.CombatUpgrades.Contains(Upgrade)) {
+					CurrentUpgrades.CombatUpgrades.Add(Upgrade);
+				}
+			}
+			GameInstance->SetUpgradeData(CurrentUpgrades);
+		}
+
+		default:
+			UE_LOGFMT(LogTemp, Error, "AInteractableChest Error | OpenChest: The specified reward type is not contemplated");
+			break;
+	}
 }

@@ -14,5 +14,5 @@ struct DIMMINGLIGHT_API FUpgradeData {
 	TMap<EStatUpgradeType, int32> StatUpgrades = {};
 
 	UPROPERTY(EditAnywhere)
-	TArray<ECombatUpgradeType> CombatUpgrades = {};
+	TSet<ECombatUpgradeType> CombatUpgrades = {};
 };

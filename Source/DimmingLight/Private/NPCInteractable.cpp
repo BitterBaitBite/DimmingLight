@@ -22,11 +22,9 @@ void ANPCInteractable::Interact_Implementation(AActor* InteractionActor) {
 }
 
 void ANPCInteractable::OnFocused_Implementation() {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Hablar con %s"), *NPCName));
-	// TODO render outline?
+	GetMesh()->SetRenderCustomDepth(true);
 }
 
 void ANPCInteractable::OnUnfocused_Implementation() {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Black, FString::Printf(TEXT("(%s fuera de foco)"), *NPCName));
-	// TODO shut off outline?
+	GetMesh()->SetRenderCustomDepth(false);
 }
