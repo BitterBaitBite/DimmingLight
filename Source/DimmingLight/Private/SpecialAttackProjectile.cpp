@@ -16,7 +16,10 @@ ASpecialAttackProjectile::ASpecialAttackProjectile() {
 	// Projectile Collision and Set Root
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComponent"));
 	CollisionComponent->InitSphereRadius(ProjectileRadius);
-	CollisionComponent->SetCollisionProfileName("BlockAll");
+	CollisionComponent->SetCollisionObjectType(ECC_GameTraceChannel1);
+	CollisionComponent->SetCollisionResponseToAllChannels(ECR_Block);
+	CollisionComponent->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
+	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	SetRootComponent(CollisionComponent);
 
 	// Mesh (for testing purposes)
@@ -60,8 +63,22 @@ void ASpecialAttackProjectile::BeginPlay() {
 }
 
 void ASpecialAttackProjectile::FireProjectile(const FVector& Direction) {
-	ProjectileMovement->Velocity = Direction * ProjectileInitSpeed;
+	ProjectileMovement->ProjectileGravityScale = 1.f;
+	ProjectileMovement->Velocity = GetActorForwardVector() * ProjectileInitSpeed;
 	ProjectileMovement->UpdateComponentVelocity();
+	ProjectileMovement->Activate();
+
+	// Sound
+	if (MuzzleFlashSound) {
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), MuzzleFlashSound, GetActorLocation());
+	}
+}
+
+void ASpecialAttackProjectile::FireHomingProjectile(const AActor* TargetActor) {
+	ProjectileMovement->ProjectileGravityScale = 0.2f;
+	ProjectileMovement->bIsHomingProjectile = true;
+	ProjectileMovement->HomingTargetComponent = TargetActor->GetRootComponent();
+	ProjectileMovement->HomingAccelerationMagnitude = ProjectileHomingAcceleration;
 	ProjectileMovement->Activate();
 
 	// Sound

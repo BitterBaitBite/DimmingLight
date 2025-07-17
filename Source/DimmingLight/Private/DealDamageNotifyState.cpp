@@ -42,7 +42,7 @@ void UDealDamageNotifyState::NotifyTick(
 		if (!PlayerCharacter) return;
 
 		float Damage = EnemyCharacter->GetDamage();
-		PlayerCharacter->ReceiveDamage(Damage, EnemyCharacter->GetDamageType());
+		IDamageable::Execute_ReceiveDamage(PlayerCharacter, Damage, EnemyCharacter->GetDamageType());
 	}
 }
 

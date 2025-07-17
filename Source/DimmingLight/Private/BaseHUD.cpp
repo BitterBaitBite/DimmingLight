@@ -96,6 +96,9 @@ void ABaseHUD::BeginPlay() {
 
 	// Player Death event bind
 	PlayerCharacter->PlayerDeathDelegate.AddDynamic(this, &ABaseHUD::OnPlayerDeath);
+
+	// Shop closed event bind
+	ShopWidget->OnShopQuitDelegate.AddDynamic(this, &ABaseHUD::CloseShop);
 }
 
 void ABaseHUD::OpenShop() {

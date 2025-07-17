@@ -218,6 +218,18 @@ class DIMMINGLIGHT_API AMainCharacter : public ACharacter, public IDamageable {
 		float BasicAttackUpgradedDamage = 10.f;
 		UPROPERTY(Transient, SkipSerialization)
 		float BasicAttackCurrentDamage = 10.f;
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+		int32 BasicAttackUpgradeNum = 3;
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+		int32 SpecialAttackUpgradeNum = 8;
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+		float BasicUpgradePosOffset = 50.f;
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+		float BasicUpgradeRotOffset = 15.f;
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+		float SpecialUpgradePosOffset = 50.f;
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+		float SpecialUpgradeRotOffset = 15.f;
 
 		UFUNCTION(BlueprintCallable, Category="Combat")
 		void BasicAttackQueue();
@@ -245,6 +257,13 @@ class DIMMINGLIGHT_API AMainCharacter : public ACharacter, public IDamageable {
 		FTimerHandle SpecialAttackHoldTimer;
 		UPROPERTY(Transient, SkipSerialization)
 		FTimerHandle SpecialAttackCooldownTimer;
+
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+		float HomingDetectionRadius = 1000.f;
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+		float HomingProjectilesSpread = 5.f;
+		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+		TArray<TSubclassOf<AActor>> ProjectileHomingClassFilter;
 
 		// INTERACTION
 		UPROPERTY(Transient, SkipSerialization)
@@ -384,7 +403,13 @@ class DIMMINGLIGHT_API AMainCharacter : public ACharacter, public IDamageable {
 		void SpecialAttackStart(const FInputActionValue& Value);
 		UFUNCTION()
 		void SpecialAttackRelease(const FInputActionValue& Value);
+		ASpecialAttackProjectile* SpawnSpecialProjectile(FVector ProjectileSpawnLocation, FRotator ProjectileSpawnRotation);
 
+		// COMBAT
+		UFUNCTION()
+		ABasicAttackProjectile* SpawnBasicProjectile(FVector ProjectileSpawnLocation, FRotator ProjectileSpawnRotation);
+
+		UFUNCTION()
 		void OnHoldSpecialAttack();
 
 		// EVENTS

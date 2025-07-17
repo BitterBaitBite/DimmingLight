@@ -4,6 +4,7 @@
 #include "MainGameInstance.h"
 #include "MainGameState.h"
 #include "NiagaraSystem.h"
+#include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "Logging/StructuredLog.h"
 #include "Particles/ParticleSystemComponent.h"
@@ -24,6 +25,9 @@ ALightDrop::ALightDrop() {
 	LightDropParticleSystem = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("LightDropParticleSystem"));
 	LightDropParticleSystem->SetupAttachment(RootComponent);
 	LightDropParticleSystem->SetCollisionProfileName("NoCollision");
+
+	LightDropLightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("LightDropLightComponent"));
+	LightDropLightComponent->SetupAttachment(LightDropParticleSystem);
 }
 
 void ALightDrop::BeginPlay() {
@@ -37,7 +41,7 @@ void ALightDrop::BeginPlay() {
 	GetWorld()->GetTimerManager().SetTimer(
 		DestroyTimer,
 		[this] { Destroy(); },
-		10.f,
+		LifeSpanInSeconds,
 		false
 	);
 }

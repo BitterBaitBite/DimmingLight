@@ -78,12 +78,12 @@ void ASpecialAttackArea::OnAreaOverlap(
 	bool bFromSweep,
 	const FHitResult& SweepResult
 ) {
-	GEngine->AddOnScreenDebugMessage(
-		-1,
-		10.f,
-		FColor::Orange,
-		FString::Printf(TEXT("Overlap actor: %s"), *OtherActor->GetName())
-	);
+	// GEngine->AddOnScreenDebugMessage(
+	// 	-1,
+	// 	10.f,
+	// 	FColor::Orange,
+	// 	FString::Printf(TEXT("Overlap actor: %s"), *OtherActor->GetName())
+	// );
 
 	if (AEnemyCharacterBase* OverlappingEnemy = Cast<AEnemyCharacterBase>(OtherActor)) {
 		OverlappingActors.AddUnique(OverlappingEnemy);

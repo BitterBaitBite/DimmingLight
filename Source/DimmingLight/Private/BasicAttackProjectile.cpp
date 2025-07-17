@@ -3,6 +3,7 @@
 #include "EnemyCharacterBase.h"
 #include "EnemyKrakenCharacter.h"
 #include "NPCBase.h"
+#include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -15,7 +16,10 @@ ABasicAttackProjectile::ABasicAttackProjectile() {
 	// Projectile Collision and Set Root
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComponent"));
 	CollisionComponent->InitSphereRadius(ProjectileRadius);
-	CollisionComponent->SetCollisionProfileName("BlockAll");
+	CollisionComponent->SetCollisionObjectType(ECC_GameTraceChannel1);
+	CollisionComponent->SetCollisionResponseToAllChannels(ECR_Block);
+	CollisionComponent->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
+	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	SetRootComponent(CollisionComponent);
 
 	// Mesh (for testing purposes)
@@ -30,6 +34,10 @@ ABasicAttackProjectile::ABasicAttackProjectile() {
 	ProjectileMovement->bAutoActivate = false;
 	ProjectileMovement->bShouldBounce = false;
 	ProjectileMovement->bRotationFollowsVelocity = true;
+
+	// Light component
+	LightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("LightComponent"));
+	LightComponent->SetupAttachment(MeshComponent);
 
 	InitialLifeSpan = ProjectileLifetime;
 }

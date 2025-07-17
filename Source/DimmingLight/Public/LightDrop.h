@@ -5,6 +5,7 @@
 #include "LightDrop.generated.h"
 
 
+class UPointLightComponent;
 class USphereComponent;
 
 UCLASS()
@@ -19,6 +20,8 @@ class DIMMINGLIGHT_API ALightDrop : public AActor {
 
 		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Light")
 		float AddedLightInSeconds = 20.f;
+		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Light")
+		float LifeSpanInSeconds = 15.f;
 
 		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Components")
 		TObjectPtr<USphereComponent> SphereCollisionComponent = nullptr;
@@ -26,6 +29,8 @@ class DIMMINGLIGHT_API ALightDrop : public AActor {
 		TObjectPtr<UStaticMeshComponent> LightDropMesh = nullptr;
 		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Components")
 		TObjectPtr<UParticleSystemComponent> LightDropParticleSystem = nullptr;
+		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Components")
+		TObjectPtr<UPointLightComponent> LightDropLightComponent = nullptr;
 
 		// EVENTS
 		UFUNCTION(BlueprintCallable)

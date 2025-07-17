@@ -28,7 +28,7 @@ void AAreaPortal::BeginPlay() {
 }
 
 FText AAreaPortal::GetInteraction_Implementation() {
-	return FText::FromString(TEXT("Travel to Combat Area"));
+	return FText::FromString(InteractionText);
 }
 
 void AAreaPortal::Interact_Implementation(AActor* InteractionActor) {

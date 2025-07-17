@@ -5,6 +5,7 @@
 #include "BasicAttackProjectile.generated.h"
 
 
+class UPointLightComponent;
 class USphereComponent;
 class UProjectileMovementComponent;
 
@@ -30,13 +31,13 @@ class DIMMINGLIGHT_API ABasicAttackProjectile : public AActor {
 
 		// COMPONENTS
 		UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement")
-		UProjectileMovementComponent* ProjectileMovement;
-
+		TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
 		UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Collision")
-		USphereComponent* CollisionComponent;
-
+		TObjectPtr<USphereComponent> CollisionComponent;
 		UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mesh")
-		UStaticMeshComponent* MeshComponent;
+		TObjectPtr<UStaticMeshComponent> MeshComponent;
+		UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mesh")
+		TObjectPtr<UPointLightComponent> LightComponent;
 
 		// VFX
 		UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effects")

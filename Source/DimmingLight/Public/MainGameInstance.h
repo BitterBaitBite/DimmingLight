@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ECombatUpgradeType.h"
 #include "FUpgradeData.h"
 #include "Engine/GameInstance.h"
 #include "MainGameInstance.generated.h"
@@ -37,18 +38,25 @@ class DIMMINGLIGHT_API UMainGameInstance : public UGameInstance {
 		void SetUpgradeData(FUpgradeData NewUpgradeData);
 
 		// STAT UPGRADES
-		UFUNCTION(BlueprintCallable, Category="Upgrades")
+		UFUNCTION(BlueprintCallable, Category="Stat Upgrades")
 		int32 GetMaxHealthUpgraded(int32 BaseMaxHealth);
-		UFUNCTION(BlueprintCallable, Category="Upgrades")
+		UFUNCTION(BlueprintCallable, Category="Stat Upgrades")
 		float GetBasicAttackDamageUpgraded(float BaseDamage);
-		UFUNCTION(BlueprintCallable, Category="Upgrades")
+		UFUNCTION(BlueprintCallable, Category="Stat Upgrades")
 		float GetSpecialAttackDamageUpgraded(float BaseDamage);
-		UFUNCTION(BlueprintCallable, Category="Upgrades")
+		UFUNCTION(BlueprintCallable, Category="Stat Upgrades")
 		float GetLightTotalTimeUpgraded(float BaseLuminosity);
-		UFUNCTION(BlueprintCallable, Category="Upgrades")
+		UFUNCTION(BlueprintCallable, Category="Stat Upgrades")
 		float GetPhysicalResistanceUpgraded(float BasePhysicalResistance);
-		UFUNCTION(BlueprintCallable, Category="Upgrades")
+		UFUNCTION(BlueprintCallable, Category="Stat Upgrades")
 		float GetMagicResistanceUpgraded(float BaseMagicResistance);
+
+		// COMBAT UPGRADES
+		UFUNCTION(BlueprintCallable, Category="Combat Upgrades")
+		bool HasBasicAttackUpgrade() const { return UpgradeData.CombatUpgrades.Contains(ECombatUpgradeType::MainAttackUpgrade); }
+
+		UFUNCTION(BlueprintCallable, Category="Combat Upgrades")
+		bool HasSpecialAttackUpgrade() const { return UpgradeData.CombatUpgrades.Contains(ECombatUpgradeType::SpecialAttackUpgrade); }
 
 		// LEVEL MANAGING
 		UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Level")

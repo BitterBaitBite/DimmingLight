@@ -20,7 +20,7 @@ void UMainGameInstance::RemoveCurrency(int32 AmountToRemove) {
 }
 
 FUpgradeData UMainGameInstance::GetUpgradeData() {
-	return FUpgradeData();
+	return UpgradeData;
 }
 
 void UMainGameInstance::SetUpgradeData(FUpgradeData NewUpgradeData) {

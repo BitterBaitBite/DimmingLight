@@ -30,6 +30,8 @@ class DIMMINGLIGHT_API ASpecialAttackProjectile : public AActor {
 		float ProjectileDamage = 10.f;
 		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 		float ProjectileLifetime = 10.f;
+		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+		float ProjectileHomingAcceleration = 300.f;
 
 		// PROJECTILE DAMAGE AREA
 		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage Area")
@@ -79,9 +81,12 @@ class DIMMINGLIGHT_API ASpecialAttackProjectile : public AActor {
 		UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
 		USoundBase* EntityHitSound;
 
-		// ACTIVATE FUNCTION
+		// ACTIVATE FUNCTIONS
 		UFUNCTION(BlueprintCallable, Category = "ProjectileMovement")
 		void FireProjectile(const FVector& Direction);
+		UFUNCTION(BlueprintCallable, Category = "ProjectileMovement")
+		void FireHomingProjectile(const AActor* TargetActor);
+
 
 		// HIT EVENT
 		UFUNCTION()

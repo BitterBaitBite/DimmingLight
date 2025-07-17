@@ -5,6 +5,8 @@
 #include "BaseHUD.generated.h"
 
 
+class UShopWidget;
+
 UCLASS(Hidden)
 class DIMMINGLIGHT_API ABaseHUD : public AHUD {
 	GENERATED_BODY()
@@ -42,7 +44,7 @@ class DIMMINGLIGHT_API ABaseHUD : public AHUD {
 		UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Widgets", meta=(AllowPrivateAccess=true))
 		TSubclassOf<UUserWidget> ShopWidgetTemplate = nullptr;
 		UPROPERTY(Transient, SkipSerialization)
-		TObjectPtr<UUserWidget> ShopWidget = nullptr;
+		TObjectPtr<UShopWidget> ShopWidget = nullptr;
 
 		UFUNCTION()
 		void OnPlayerDeath();

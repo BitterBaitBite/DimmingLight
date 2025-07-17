@@ -50,6 +50,8 @@ class DIMMINGLIGHT_API AEnemyCharacterBase : public ACharacter {
 		TObjectPtr<UParticleSystem> DeathFX;
 
 		// DROPS
+		UPROPERTY(EditDefaultsOnly, Category="Effects")
+		float HeightOffset = 0.f;
 		UPROPERTY(EditAnywhere, Category="Drops")
 		float LightDropChance = 0.25f;
 		UPROPERTY(EditDefaultsOnly, Category="Drops")
@@ -58,6 +60,8 @@ class DIMMINGLIGHT_API AEnemyCharacterBase : public ACharacter {
 		// SOCKETS
 		UPROPERTY(EditDefaultsOnly, Category="Sockets")
 		FName FXRoot_Socket = TEXT("FX_Root");
+		UPROPERTY(EditDefaultsOnly, Category="Sockets")
+		FName Drop_Socket = TEXT("FX_Death");
 		UPROPERTY(EditDefaultsOnly, Category="Sockets")
 		FName DamageOrigin_Socket = TEXT("FX_Trail_02_R");
 		UPROPERTY(EditDefaultsOnly, Category="Sockets")

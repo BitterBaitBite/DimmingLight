@@ -3,6 +3,8 @@
 #include "BasicAttackProjectile.h"
 #include "EDamageType.h"
 #include "ELevelType.h"
+#include "EnemyCharacterBase.h"
+#include "EnemyKrakenCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EStatUpgradeType.h"
@@ -366,17 +368,17 @@ void AMainCharacter::ReceiveDamage_Implementation(float RawDamage, EDamageType D
 	// Calculate the actual damage
 	float ReducedDamage = RawDamage;
 	switch (DamageType) {
-	case EDamageType::Physical:
-		ReducedDamage *= (1.f - PhysicalResistanceInitial);
-		break;
+		case EDamageType::Physical:
+			ReducedDamage *= (1.f - PhysicalResistanceInitial);
+			break;
 
-	case EDamageType::Magic:
-		ReducedDamage *= (1.f - MagicResistanceInitial);
-		break;
+		case EDamageType::Magic:
+			ReducedDamage *= (1.f - MagicResistanceInitial);
+			break;
 
-	default:
-		ReducedDamage *= 1;
-		break;
+		default:
+			ReducedDamage *= 1;
+			break;
 	}
 	int32 Damage = FMath::RoundToInt(ReducedDamage);
 	GEngine->AddOnScreenDebugMessage(
@@ -527,7 +529,7 @@ void AMainCharacter::SpecialAttackStart(const FInputActionValue& Value) {
 	if (bIsChargingSpecialAttack) return;
 
 	float LightLeftInSeconds = GameState->GetLightLeftInSeconds();
-	if (SpecialAttackLightCost > LightLeftInSeconds) {
+	if (LightLeftInSeconds < SpecialAttackLightCost) {
 		PlayVoiceAudio(OutOfManaVoiceLine);
 		return;
 	}
@@ -559,7 +561,7 @@ void AMainCharacter::SpecialAttackStart(const FInputActionValue& Value) {
 		this,
 		&AMainCharacter::OnHoldSpecialAttack,
 		HoldUpdateRate,
-		true
+		bIsChargingSpecialAttack
 	);
 }
 
@@ -569,6 +571,9 @@ void AMainCharacter::OnHoldSpecialAttack() {
 		GetWorld()->GetTimerManager().ClearTimer(SpecialAttackHoldTimer);
 		PlayAnimMontage(SpecialAttackEndAnimMontage);
 		PlayVoiceAudio(OutOfManaVoiceLine);
+
+		bIsChargingSpecialAttack = false;
+		bIsAttacking = false;
 		return;
 	}
 
@@ -607,24 +612,79 @@ void AMainCharacter::SpecialAttackRelease(const FInputActionValue& Value) {
 	// Origin Socket
 	FVector ProjectileSpawnLocation = GetMesh()->GetSocketLocation(MarkStart_Socket);
 	FRotator ProjectileSpawnRotation = GetMesh()->GetSocketRotation(MarkStart_Socket);
+	ProjectileSpawnRotation.Yaw += 90.f;
 
-	// Spawn Params
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.Instigator = GetInstigator();
+	if (!GameInstance->HasSpecialAttackUpgrade()) {
+		if (TObjectPtr<ASpecialAttackProjectile> Projectile = SpawnSpecialProjectile(ProjectileSpawnLocation, ProjectileSpawnRotation)) {
+			Projectile->ProjectileDamage = SpecialAttackUpgradedDamage + ((SpecialAttackUpgradedDamage / 10.f) *
+				SpecialAttackCurrentCharge);
+			Projectile->FireProjectile(Projectile->GetActorRightVector());
+		}
+	}
+	else {
+		// If not classes specified for homing projectiles, we add the enemy base class
+		if (ProjectileHomingClassFilter.IsEmpty()) ProjectileHomingClassFilter.Add(AEnemyCharacterBase::StaticClass());
 
-	ASpecialAttackProjectile* Projectile = GetWorld()->SpawnActor<ASpecialAttackProjectile>(
-		SpecialAttackProjectile,
-		ProjectileSpawnLocation,
-		ProjectileSpawnRotation,
-		SpawnParams
-	);
+		TArray<AActor*> OutActors;
+		TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+		UKismetSystemLibrary::SphereOverlapActors(
+			GetWorld(),
+			GetActorLocation(),
+			HomingDetectionRadius,
+			ObjectTypes,
+			nullptr,
+			TArray<AActor*>(),
+			OutActors
+		);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("HomingDetectionRadius: %f"), HomingDetectionRadius));
 
-	if (Projectile) {
-		Projectile->ProjectileDamage = (SpecialAttackUpgradedDamage + ((SpecialAttackUpgradedDamage / 10.f) *
-			SpecialAttackCurrentCharge));
-		// Projectile->FireProjectile(ProjectileSpawnRotation.Vector());
-		Projectile->FireProjectile(ProjectileSpawnRotation.Add(0.f, 90.f, 0.f).Vector());
+		// TODO cambiar clases a pelo por el array de clases a filtrar 'ProjectileHomingClassFilter'
+		TArray<AActor*> FilteredEnemies;
+		for (AActor* Actor : OutActors) {
+			if (Actor->IsA(AEnemyCharacterBase::StaticClass())
+				|| Actor->IsA(AEnemyKrakenCharacter::StaticClass())
+			) {
+				FilteredEnemies.Add(Actor);
+			}
+		}
+
+		FilteredEnemies.Sort([this](const AActor& EnemyA, const AActor& EnemyB) {
+			return FVector::DistSquared(GetActorLocation(), EnemyA.GetActorLocation()) <
+				FVector::DistSquared(GetActorLocation(), EnemyB.GetActorLocation());
+		});
+
+		TArray<ASpecialAttackProjectile*> Projectiles;
+		for (int i = 0; i < SpecialAttackUpgradeNum; i++) {
+			FRotator NewSpawnRotation = ProjectileSpawnRotation;
+
+			// Add some spread to the projectiles
+			float SpawnSpread = HomingProjectilesSpread * FilteredEnemies.IsEmpty() ? 2.f : 1.f;
+			NewSpawnRotation.Yaw += FMath::RandRange(-SpawnSpread, SpawnSpread);
+			NewSpawnRotation.Pitch += FMath::RandRange(-SpawnSpread, SpawnSpread);
+
+			// Spawn the projectiles and add them to array
+			ASpecialAttackProjectile* Projectile = SpawnSpecialProjectile(ProjectileSpawnLocation, NewSpawnRotation);
+			Projectiles.Add(Projectile);
+		}
+
+		// Activate the projectiles movement depending on number of enemies around
+		for (int i = 0; i < Projectiles.Num(); i++) {
+			if (!Projectiles[i]) continue;
+
+			Projectiles[i]->ProjectileDamage = SpecialAttackUpgradedDamage;
+
+			if (FilteredEnemies.IsEmpty()) {
+				Projectiles[i]->FireProjectile(Projectiles[i]->GetActorRightVector());
+			}
+			else {
+				// We use the rest operator to rotate between enemy/enemies
+				int EnemyIndex = i % FilteredEnemies.Num();
+				Projectiles[i]->FireHomingProjectile(FilteredEnemies[EnemyIndex]);
+			}
+		}
+
+		FilteredEnemies.Empty();
 	}
 
 	// Special Attack Cooldown
@@ -637,6 +697,20 @@ void AMainCharacter::SpecialAttackRelease(const FInputActionValue& Value) {
 		},
 		SpecialAttackCooldown,
 		false
+	);
+}
+
+ASpecialAttackProjectile* AMainCharacter::SpawnSpecialProjectile(FVector ProjectileSpawnLocation, FRotator ProjectileSpawnRotation) {
+	// Spawn Params
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = GetInstigator();
+
+	return GetWorld()->SpawnActor<ASpecialAttackProjectile>(
+		SpecialAttackProjectile,
+		ProjectileSpawnLocation,
+		ProjectileSpawnRotation,
+		SpawnParams
 	);
 }
 
@@ -655,21 +729,35 @@ void AMainCharacter::BasicAttack() {
 	FVector ProjectileSpawnLocation = GetMesh()->GetSocketLocation(GunBarrel_Socket);
 	FRotator ProjectileSpawnRotation = GetMesh()->GetSocketRotation(GunMuzzle_Socket);
 
-	// Spawn Params
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.Instigator = GetInstigator();
+	if (!GameInstance->HasBasicAttackUpgrade()) {
+		if (ABasicAttackProjectile* Projectile = SpawnBasicProjectile(ProjectileSpawnLocation, ProjectileSpawnRotation)) {
+			Projectile->ProjectileDamage = BasicAttackCurrentDamage;
+			Projectile->FireProjectile(ProjectileSpawnRotation.Vector());
+		}
+	}
+	else {
+		TArray<ABasicAttackProjectile*> Projectiles;
+		float ProjectilesPosOffset = -BasicUpgradePosOffset * (BasicAttackUpgradeNum - 1) / 2;
+		float ProjectilesRotOffset = -BasicUpgradeRotOffset * (BasicAttackUpgradeNum - 1) / 2;
+		for (int32 i = 0; i < BasicAttackUpgradeNum; i++) {
+			float LocationOffset = ProjectilesPosOffset + BasicUpgradePosOffset * i;
+			FVector NewSpawnLocation = ProjectileSpawnLocation + GetMesh()->GetForwardVector() * LocationOffset;
 
-	ABasicAttackProjectile* Projectile = GetWorld()->SpawnActor<ABasicAttackProjectile>(
-		BasicAttackProjectile,
-		ProjectileSpawnLocation,
-		ProjectileSpawnRotation,
-		SpawnParams
-	);
+			float RotationOffset = -(ProjectilesRotOffset + BasicUpgradeRotOffset * i);
+			FRotator NewSpawnRotation = FRotator(ProjectileSpawnRotation.Pitch, ProjectileSpawnRotation.Yaw + RotationOffset,
+			                                     ProjectileSpawnRotation.Roll);
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%i: %f"), i, RotationOffset));
 
-	if (Projectile) {
-		Projectile->ProjectileDamage = 10.f;
-		Projectile->FireProjectile(ProjectileSpawnRotation.Vector());
+			ABasicAttackProjectile* Projectile = SpawnBasicProjectile(NewSpawnLocation, NewSpawnRotation);
+			Projectiles.Add(Projectile);
+		}
+
+		for (ABasicAttackProjectile* Projectile : Projectiles) {
+			if (!Projectile) return;
+
+			Projectile->ProjectileDamage = BasicAttackCurrentDamage;
+			Projectile->FireProjectile(Projectile->GetActorForwardVector());
+		}
 	}
 }
 
@@ -684,6 +772,20 @@ void AMainCharacter::ResetBasicAttack() {
 	AttackCount = 0;
 	bHasQueuedAttack = false;
 	bIsAttacking = false;
+}
+
+ABasicAttackProjectile* AMainCharacter::SpawnBasicProjectile(FVector ProjectileSpawnLocation, FRotator ProjectileSpawnRotation) {
+	// Spawn Params
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = GetInstigator();
+
+	return GetWorld()->SpawnActor<ABasicAttackProjectile>(
+		BasicAttackProjectile,
+		ProjectileSpawnLocation,
+		ProjectileSpawnRotation,
+		SpawnParams
+	);
 }
 
 

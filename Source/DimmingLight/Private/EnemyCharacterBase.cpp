@@ -87,8 +87,9 @@ void AEnemyCharacterBase::OnDeath() {
 	}
 
 	// Origin Socket
-	FVector DropSpawnLocation = GetMesh()->GetSocketLocation(FXRoot_Socket);
-	FRotator DropSpawnRotation = GetMesh()->GetSocketRotation(FXRoot_Socket);
+	FRotator DropSpawnRotation = GetMesh()->GetSocketRotation(Drop_Socket);
+	FVector DropSpawnLocation = GetMesh()->GetSocketLocation(Drop_Socket);
+	DropSpawnLocation.Z += HeightOffset;
 
 	// Spawn Params
 	FActorSpawnParameters SpawnParams;
